@@ -1,0 +1,35 @@
+spring:
+  profiles:
+    active: development
+---
+spring:
+  profiles: development
+  datasource:
+    url: jdbc:oracle:thin:@db.openec.zyhao.com:1521/orcl
+    username: orderdb
+    password: 3g2win.com
+#    url: jdbc:oracle:thin:@db.openec.zyhao.com:1521:orclsqyx
+#    username: orderdb
+#    password: sqyx123
+    initialize: true
+  zipkin:
+    base-url: http://zipkin.openec.zyhao.com:9411/
+  jpa:
+    database-platform: org.hibernate.dialect.OracleDialect
+    show-sql: true
+security:
+  oauth2:
+    resource:
+      userInfoUri: http://user.openec.zyhao.com:8181/uaa/user
+    client:
+      client-id: acme
+      access-token-uri: http://user.openec.zyhao.com:8787
+  ignored: /**
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://discovery.openec.zyhao.com:8761/eureka/
