@@ -41,8 +41,8 @@ import com.zyhao.openec.pojo.RepEntity;
 @RequestMapping(path = "/v1")
 public class OrderController {
     private Log log = LogFactory.getLog(OrderController.class);
-    private static String platform_seller = "seller";//seller-物业平台 user-用户平台 employee-运营平台
-	private static String platform_user = "user";//seller-物业平台 user-用户平台 employee-运营平台
+    public static String platform_seller = "seller";//seller-物业平台 user-用户平台 employee-运营平台
+	public static String platform_user = "user";//seller-物业平台 user-用户平台 employee-运营平台
 	@Autowired
 	private OrderService orderService;
 

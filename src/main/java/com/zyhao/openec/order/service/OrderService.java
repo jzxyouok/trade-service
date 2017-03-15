@@ -57,7 +57,8 @@ public class OrderService {
 	private final Log log = LogFactory.getLog(OrderService.class);
 //	private OAuth2RestTemplate oAuth2RestTemplate;
     private RestTemplate restTemplate;
-    
+    public static String platform_seller = "seller";//seller-物业平台 user-用户平台 employee-运营平台
+	public static String platform_user = "user";//seller-物业平台 user-用户平台 employee-运营平台
     @Autowired
     public OrderService(
 //    		@LoadBalanced OAuth2RestTemplate oAuth2RestTemplate,
@@ -384,6 +385,7 @@ public class OrderService {
 				log.info("====content======"+content);
 				for(Orders o :content){
 					o.setOrderItems(orderItemRepository.findByOrderCode(o.getOrderCode()));
+					o.setPayInfo(payInfoRepository.findByOutTradeNo(o.getOutTradeNo()));
 				}
 				
 				resp.setMsg("订单列表查询成功");
@@ -408,7 +410,6 @@ public class OrderService {
 			for(Orders o :content){
 				o.setOrderItems(orderItemRepository.findByOrderCode(o.getOrderCode()));
 				o.setPayInfo(payInfoRepository.findByOutTradeNo(o.getOutTradeNo()));
-				
 			}
 			resp.setMsg("订单列表查询成功");
 			resp.setStatus("0");
@@ -507,30 +508,60 @@ public class OrderService {
 	 */
 	public RepEntity getOrderByOrderCode(String orderCode){
 		RepEntity resp = new RepEntity();
-		try{
-			Map<String,String[]> user = getAuthenticatedUser();
-			String userId = user.get("Session_id")[0];
+		Map<String,String[]> authenticatedUser = getAuthenticatedUser();
+		/**
+		 * 判断平台
+		 */
+		String platform = authenticatedUser.get("platform")!=null?authenticatedUser.get("platform")[0]:"";
+
+		if(platform_user.equalsIgnoreCase(platform)){
+			String userId = authenticatedUser.get("Session_id")[0];
 			Orders order = orderRepository.findByMemberIdAndOrderCode(userId,orderCode);
-			
-			if(order == null || order.getStatus().equals("100")){
+			if(order == null){
 				resp.setStatus("-1");
 				resp.setMsg("该订单不存在或已被删除");
 				
 				return resp;
 			}
-			
+			order.setOrderItems(orderItemRepository.findByOrderCode(order.getOrderCode()));
+			order.setPayInfo(payInfoRepository.findByOutTradeNo(order.getOutTradeNo()));
 			resp.setStatus("0");
 			resp.setMsg("详情查询成功");
 			resp.setData(order);
 			
 			return resp;
-		}catch(Exception e){
-			e.printStackTrace();
-			resp.setStatus("-1");
-			resp.setMsg("详情查询失败");
+			
+			
+		}else if(platform_seller.equalsIgnoreCase(platform)){
+			String sellerId = request.getParameter("sellerId");
+			log.info("queryOrderList user.get(Session_businessId)[0] = "+authenticatedUser.get("Session_businessId")[0]+" sellerId = "+sellerId);
+			
+			Orders order = orderRepository.findByBusinessIdAndOrderCode(authenticatedUser.get("Session_businessId")[0], orderCode);
+			if(order == null){
+				resp.setStatus("-1");
+				resp.setMsg("该订单不存在或已被删除");
+				return resp;
+			}
+			order.setOrderItems(orderItemRepository.findByOrderCode(order.getOrderCode()));
+			order.setPayInfo(payInfoRepository.findByOutTradeNo(order.getOutTradeNo()));
+			resp.setStatus("0");
+			resp.setMsg("详情查询成功");
+			resp.setData(order);
+			return resp;
+		}else{
+			Orders order = orderRepository.findOne(orderCode);
+			if(order == null){
+				resp.setStatus("-1");
+				resp.setMsg("该订单不存在或已被删除");
+				return resp;
+			}
+			order.setOrderItems(orderItemRepository.findByOrderCode(order.getOrderCode()));
+			order.setPayInfo(payInfoRepository.findByOutTradeNo(order.getOutTradeNo()));
+			resp.setStatus("0");
+			resp.setMsg("详情查询成功");
+			resp.setData(order);
 			return resp;
 		}
-
 	}
 
 	/**
@@ -735,6 +766,7 @@ public class OrderService {
 			if(orderList.getContent() != null && orderList.getContent().size() > 0){
 				List<Orders> content = orderList.getContent();
 				for(Orders o:content){
+					o.setOrderItems(orderItemRepository.findByOrderCode(o.getOrderCode()));
 					o.setPayInfo(payInfoRepository.findByOutTradeNo(o.getOutTradeNo()));
 				}
 			}
