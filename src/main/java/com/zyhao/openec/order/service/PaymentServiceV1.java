@@ -280,7 +280,7 @@ public class PaymentServiceV1 {
 			String requestXML = PayUtil.getRequestXml(packageParams);
 			log.info("getPrePay method  request weixin pay param is:"+requestXML);
 			
-			String resXml = HttpUtil.postData(Constant.UFDODER_URL, requestXML);
+			String resXml = HttpUtil.postData(sysConfigInfo.getUfdoderUrl(), requestXML);
 			log.info("getPrePay method  response weixin result is :"+resXml);
 			if(resXml==null){
 				
