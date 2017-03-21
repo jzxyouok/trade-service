@@ -50,7 +50,8 @@ public class PaymentServiceV1 {
 	private final static Log log = LogFactory.getLog(PaymentServiceV1.class);
 //	private OAuth2RestTemplate oAuth2RestTemplate;
 	private RestTemplate restTemplate;
-    
+	@Autowired
+	private QrcbConstant qrcbConstant;
     @Autowired
     public PaymentServiceV1(
 //    	@LoadBalanced OAuth2RestTemplate oAuth2RestTemplate,
@@ -61,8 +62,6 @@ public class PaymentServiceV1 {
     }
 	@Autowired
 	private PayInfoRepository payInfoDao;
-	@Autowired
-	private QrcbConstant qrcbConstant;
 	@Autowired
 	private OrderService orderService;
 	
@@ -195,7 +194,9 @@ public class PaymentServiceV1 {
 				e.printStackTrace();
 			}
 		}
-		
+		if(Constant.PayWay.QrcbPay.name().equals(payInfo.getPayWay())){//
+			return "success";//default answer
+		}
 		
 		
 		
@@ -229,7 +230,7 @@ public class PaymentServiceV1 {
 //        String appid = ""+DataDicUtil.getAllFields(businessId).get("AppID");
 //        String mch_id = ""+DataDicUtil.getAllFields(businessId).get("MechID"); // 商业号
 //        String key = ""+DataDicUtil.getAllFields(businessId).get("ApiKey"); // key
-        SysConfigInfo sysConfigInfo = getSysConfigInfo(businessId);
+        SysConfigInfo sysConfigInfo = getSysConfigInfo(businessId,pay_way);
         String appid = sysConfigInfo.getAppid();
         String mch_id = sysConfigInfo.getMechid();
         String key = sysConfigInfo.getAppkey();
@@ -362,7 +363,7 @@ public class PaymentServiceV1 {
 		
 	}
 	public ReturnObj getPrePayQrcb(String out_trade_no,
-			String channel_id,String pay_way,String body) throws Exception{
+			String channel_id,String pay_way,String body,String businessId) throws Exception{
 		ReturnObj returnObj = new ReturnObj();
 		
 		//根据大out_trade_no获取金额
@@ -370,23 +371,31 @@ public class PaymentServiceV1 {
 //	    String notify_url = DataDicUtil.getAllFields(channel_id).get("BackNotifyRedirectUri")
 //	    		+"/"+channel_id+"/"+pay_way+"/"+pay.getContentMd5();
 //	
-	    String notify_url = qrcbConstant.getNotify_url()+channel_id+"/"+pay_way+"/"+pay.getContentMd5();//"https://sqyx.qrcb.com.cn/api/payment/nologin/backRcvResp/"+channel_id+"/"+pay_way+"/"+pay.getContentMd5();
+	    SysConfigInfo sysConfigInfo = getSysConfigInfo(businessId,pay_way);
+	    String notify_url = sysConfigInfo.getBackNotifyRedirectUri()+channel_id+"/"+pay_way+"/"+pay.getContentMd5();
+	    String partner = sysConfigInfo.getMechid();//"12039175";
+	    String return_url = sysConfigInfo.getFrontNotifyRedirectUri()+out_trade_no;
+	    String key = sysConfigInfo.getAppkey();
+	    
+	    
+	    
+	  //  String notify_url = qrcbConstant.getNotify_url()+channel_id+"/"+pay_way+"/"+pay.getContentMd5();//"https://sqyx.qrcb.com.cn/api/payment/nologin/backRcvResp/"+channel_id+"/"+pay_way+"/"+pay.getContentMd5();
 		Integer price = pay.getPayPrice();
 		double total_price = CommonUtil.doubleDivide(price, 100,2);
-		
-		String partner = qrcbConstant.getPartner();//"12039175";
-		String show_url = qrcbConstant.getShow_url();//"https://sqyx.qrcb.com.cn";
-		String ip = "127.0.0.1";
 		String url = qrcbConstant.getUrl();//"https://epay.qrcb.com.cn:50080/epaygate/mb/Wirelesspaygate.htm";
+		String show_url = qrcbConstant.getShow_url();//"https://sqyx.qrcb.com.cn";
+		
+		String ip = "127.0.0.1";
+		
 		
 		String time_start = DateFormatUtils.format(new Date(), "yyyyMMdd HH:mm:ss");
 	    //	String time_expire = "";
 		//String transport_fee = "";
 		//String product_fee = "";
 		String attach = pay.getContentMd5();
-		String return_url = qrcbConstant.getReturn_url()+out_trade_no;//"https://sqyx.qrcb.com.cn";
+		
 		//String trade_details = partner+"^"+total_price+"^"+0+"^"+body+"^"+out_trade_no+"^0002^1"; //商户号^交易金额^手续费金额^商品描述^订单号^交易类型^是否计算手续费
-		String key = qrcbConstant.getKey();//"pkh6pvqaw0l1ryrvnikan38iecxkdfew";
+		
 		
 		SortedMap<String,String> map = new TreeMap<String,String>();
 		map.put("service","pay_service");
@@ -458,8 +467,8 @@ public class PaymentServiceV1 {
 	}
 	
 	
-	public SysConfigInfo getSysConfigInfo(String businessId) {
-		SysConfigInfo info = restTemplate.getForObject("http://customer-service/uaa/nologin/getSysConfigInfo?Session_businessId="+businessId,SysConfigInfo.class,"");		
+	public SysConfigInfo getSysConfigInfo(String businessId,String payWay) {
+		SysConfigInfo info = restTemplate.getForObject("http://customer-service/uaa/nologin/getSysConfigInfo?Session_businessId="+businessId+"&BusinessPayWay="+payWay,SysConfigInfo.class,"");		
 		return info;
 	}
 	

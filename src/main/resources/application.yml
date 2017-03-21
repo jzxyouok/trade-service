@@ -1,16 +1,21 @@
 spring:
   profiles:
     active: development
+QrcbConstant:
+  sync_success: 000000
+#  partner: 12052737
+#  key: fd27ea9125c84c1886d0a4a7a94c211d
+  show_url: https://sqyx.qrcb.com.cn/
+  url: https://epay.qrcb.com.cn:50080/epaygate/mb/Wirelesspaygate.htm
+#  return_url: https://sqyx.qrcb.com.cn/html/shoppingcart/payresult.html?outTradeNo=
+#  notify_url: https://sqyx.qrcb.com.cn/api/trade/nologin/backRcvResp/
 ---
 spring:
   profiles: development
   datasource:
-    url: jdbc:oracle:thin:@db.openec.zyhao.com:1521/orcl
+    url: jdbc:oracle:thin:@db.openec.zyhao.com:1521:orclsqyx
     username: orderdb
-    password: 3g2win.com
-#    url: jdbc:oracle:thin:@db.openec.zyhao.com:1521:orclsqyx
-#    username: orderdb
-#    password: sqyx123
+    password: sqyx123
     initialize: true
   zipkin:
     base-url: http://zipkin.openec.zyhao.com:9411/

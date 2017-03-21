@@ -135,7 +135,7 @@ public class PaymentNoLoginController {
 				log.info(" backRcvResp method pay is "+pay+" pay.getBusinessId() is"+pay.getBusinessId());
 				
 //		    	String key = ""+DataDicUtil.getAllFields(pay.getBusinessId()).get("ApiKey");
-		    	String key =paymentService.getSysConfigInfo(pay.getBusinessId()).getAppkey();
+		    	String key =paymentService.getSysConfigInfo(pay.getBusinessId(),pay_way).getAppkey();
 				log.info(" backRcvResp method pay is "+pay+" key is"+key);
 
 		    	if(pay==null){
@@ -185,7 +185,7 @@ public class PaymentNoLoginController {
 			                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
 			                .get();
 			    }else{
-			    	key = "";
+			    	key = paymentService.getSysConfigInfo(pay.getBusinessId(),pay_way).getAppkey();
 					//----------处理支付宝支付通知业务--------------
 					log.debug(" backRcvResp method AliPayUtil.getKey is "+key+" channel_id is"+channel_id);
 					if(PayUtil.isPaySign("utf-8",getRequestParams,key))//验证数据加解密
@@ -205,9 +205,17 @@ public class PaymentNoLoginController {
 			    }
 			    break;
 		    case "QrcbPay":
-		    	pay = paymentService.getpayInfoByOutTradeNo(String.valueOf(getRequestParams.get("out_trade_no")));
-		    	key = "pkh6pvqaw0l1ryrvnikan38iecxkdfew";
-		    	
+		    	requestParams = new HashMap<String,String>();
+		    	JSONObject json = new JSONObject(postRequestParams);
+		    	Iterator keys = json.keys();
+		    	while(keys.hasNext()){
+		    		String k = String.valueOf(keys.next());
+		    		requestParams.put(k,json.getString(k));
+		    	}
+		    	pay = paymentService.getpayInfoByOutTradeNo(String.valueOf(json.get("out_trade_no")));
+		    	log.info("backRcvResp method run  pay_way="+pay_way+" out_trade_no===="+json.get("out_trade_no")+" pay -========="+pay);
+		    	key = paymentService.getSysConfigInfo(pay.getBusinessId(),pay_way).getAppkey();//"pkh6pvqaw0l1ryrvnikan38iecxkdfew";
+		    	log.info("backRcvResp method run  pay_way="+pay_way+pay.getBusinessId());
 			    if(pay==null){
 			    	requestParamsJson.put("code", "error");
 			    	requestParamsJson.put("msg", "the db cannot find PayInfo");
@@ -221,12 +229,12 @@ public class PaymentNoLoginController {
 			    }else{
 					//----------处理支付宝支付通知业务--------------
 					log.debug(" backRcvResp method QrcbPayUtil.getKey is "+key+" channel_id is"+channel_id);
-					String value = EpayCore.createLinkString(EpayCore.paraFilter(getRequestParams));
+					String value = EpayCore.createLinkString(EpayCore.paraFilter(requestParams));
 					String sign = EpayMD5.sign(value,key,"UTF-8");
 					
 					if(EpayMD5.validateSign(value, sign, key, "UTF-8"))//验证数据加解密
 					{
-					    payInfo = AliPayUtil.convertMapToBeanQrcb(getRequestParams,pay);
+					    payInfo = AliPayUtil.convertMapToBeanQrcb(requestParams,pay);
 					}else{
 						requestParamsJson.put("code", "error");
 				    	requestParamsJson.put("msg", "the ali Sign compares faild");
@@ -386,7 +394,7 @@ public class PaymentNoLoginController {
 		}
         if(Constant.PayWay.QrcbPay.name().equals(pay_way)){//农商行
 			
-			returnObj = paymentService.getPrePayQrcb(out_trade_no,channel_id,pay_way,body);
+			returnObj = paymentService.getPrePayQrcb(out_trade_no,channel_id,pay_way,body,businessId);
 			log.info("getPrePay method run PrePaStr ===="+returnObj.getData());
 			return Optional.ofNullable(returnObj)
 	               .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
