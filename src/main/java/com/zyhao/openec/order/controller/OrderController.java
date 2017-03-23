@@ -248,22 +248,6 @@ public class OrderController {
 	}
 	
 	/**
-	 * 修改订单支付状态
-	 * 
-	 * @param
-	 * @return
-	 * @throws Exception
-	 */
-	@Transactional
-	@RequestMapping(path = "/edit/{out_trade_no}", method = RequestMethod.GET)
-	public ResponseEntity<List<Orders>> editOrder(@PathVariable("out_trade_no") String out_trade_no,
-			@RequestParam String status,String orderstatus,HttpServletRequest request) throws Exception {
-        return Optional.ofNullable(orderService.editOrderPayStatus(request,out_trade_no,status,orderstatus))
-                .map(orders -> new ResponseEntity(orders,HttpStatus.OK))
-                .orElseThrow(() -> new Exception("Could not find getWaitPayOrderDetail"));
-	}
-	
-	/**
 	 * 修改订单状态
 	 * 
 	 * @param

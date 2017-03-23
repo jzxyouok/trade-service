@@ -71,6 +71,7 @@ public class PaymentNoLoginController {
 		    return Optional.ofNullable(returnObj)
 		    		.map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
 		    		.get();
+		    
 		}
 		log.info("frontNotify method params is "+pay.toString());
 		try{

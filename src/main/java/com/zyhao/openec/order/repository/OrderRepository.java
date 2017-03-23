@@ -114,6 +114,12 @@ public interface OrderRepository extends PagingAndSortingRepository<Orders, Stri
 
 	Page<Orders> findBySellerIdAndStatusAndBusinessId(String sellerId, String status, String businessId,
 			Pageable pageable);
+
+
+	Page<Orders> findByMemberIdAndBusinessId(String userId, String businessId, Pageable pageable);
+
+
+	Page<Orders> findByMemberIdAndBusinessIdAndStatusIn(String userId, String businessId, List<String> statusIn,Pageable pageable);
 	
 }
 

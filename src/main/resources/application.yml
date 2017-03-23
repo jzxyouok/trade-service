@@ -1,6 +1,11 @@
 spring:
   profiles:
     active: development
+PayConstant:
+  mustUseFrontNotifyForOrderStatus: true
+  mustUseFrontNotifyForInventory: true
+  mustUseBackNotifyForOrderStatus: true
+  mustUseBackNotifyForInventory:  false
 QrcbConstant:
   sync_success: 000000
 #  partner: 12052737

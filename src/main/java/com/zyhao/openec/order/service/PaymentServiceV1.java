@@ -18,13 +18,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 //import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import com.zyhao.openec.order.entity.PayInfo;
+import com.zyhao.openec.order.pojo.PayPoJo;
 import com.zyhao.openec.order.repository.PayInfoRepository;
+import com.zyhao.openec.pojo.RepEntity;
 import com.zyhao.openec.pojo.ReturnObj;
 import com.zyhao.openec.pojo.SysConfigInfo;
 import com.zyhao.openec.sign.EpayMD5;
@@ -52,6 +55,12 @@ public class PaymentServiceV1 {
 	private RestTemplate restTemplate;
 	@Autowired
 	private QrcbConstant qrcbConstant;
+	@Autowired
+	private PayPoJo payPojo;
+	public static String status_0 = "0";//0-待支付 1-已支付待发货  2-待收货 3-已签收 4-交易完成5-交易取消
+	public static String status_4 = "4";//0-待支付 1-已支付待发货  2-待收货 3-已签收 4-交易完成5-交易取消
+	public static String status_6 = "6";//0-待支付 1-已支付待发货  2-待收货 3-已签收 4-交易完成5-交易取消 6-前台通知支付确认
+	
     @Autowired
     public PaymentServiceV1(
 //    	@LoadBalanced OAuth2RestTemplate oAuth2RestTemplate,
@@ -98,15 +107,19 @@ public class PaymentServiceV1 {
 	 * 前台通知
 	 * @param pay
 	 * @return
+	 * @throws Exception 
 	 */
-	public ReturnObj frontNotify(HttpServletRequest request,PayInfo pay) {
+	public ReturnObj frontNotify(HttpServletRequest request,PayInfo pay) throws Exception {
 	
 		log.info(" frontNotify method begin update params is "+pay.toString());
 		
 		Map<String, String[]> authenticatedUser = getAuthenticatedUser();
 		String authenticatedUserId = authenticatedUser.get("Session_id")[0];
-		if(authenticatedUserId != null && !"".equals(String.valueOf(authenticatedUserId))){
-			PayInfo findByOutTradeNo = payInfoDao.findByOutTradeNoAndUserId(pay.getOutTradeNo(),authenticatedUserId);
+		
+		log.info(" frontNotify method find payinfo ByOutTradeNo error, find payinfo authenticatedUserId="+authenticatedUserId+" pay.getOutTradeNo()="+pay.getOutTradeNo());
+		
+//		if(authenticatedUserId != null && !"".equals(String.valueOf(authenticatedUserId))){
+			PayInfo findByOutTradeNo = payInfoDao.findByOutTradeNo(pay.getOutTradeNo());
 			if(findByOutTradeNo == null){
 				log.error(" frontNotify method find payinfo ByOutTradeNo error,cannot find payinfo ");
 				ReturnObj returnObj = new ReturnObj();
@@ -119,17 +132,25 @@ public class PaymentServiceV1 {
 		    findByOutTradeNo.setTradeNo(pay.getTradeNo());
 		    findByOutTradeNo.setFrontNotifyStatus(pay.getFrontNotifyStatus());
 		    payInfoDao.saveAndFlush(findByOutTradeNo);
+		    
+		    boolean modifyOrderStatus = Boolean.valueOf(payPojo.getMustUseFrontNotifyForOrderStatus());
+		    boolean notifyInventory = Boolean.valueOf(payPojo.getMustUseFrontNotifyForInventory());
+		    String status = status_6;
+			String orderstatus = pay.getPayStatus();
+			
+		    orderService.editOrderPayStatus(pay.getOutTradeNo(),status,orderstatus, modifyOrderStatus, notifyInventory);
+		    
 		    ReturnObj returnObj = new ReturnObj();
 		    returnObj.setCode(Constant.success);
 		    returnObj.setMsg("success");
 			return returnObj;
-		}else{
-			log.error(" frontNotify method find payinfo userid is diffrent ");
-			ReturnObj returnObj = new ReturnObj();
-			returnObj.setCode(Constant.error);
-			returnObj.setMsg("payinfo userid is diffrent");
-			return returnObj;
-		}
+//		}else{
+//			log.error(" frontNotify method find payinfo userid is diffrent ");
+//			ReturnObj returnObj = new ReturnObj();
+//			returnObj.setCode(Constant.error);
+//			returnObj.setMsg("payinfo userid is diffrent");
+//			return returnObj;
+//		}
 	}
 	
 	/**
@@ -459,17 +480,37 @@ public class PaymentServiceV1 {
 	 * @throws Exception 
 	 */
 	public void notifyOrder(PayInfo payInfo) throws Exception {
-		String out_trade_no = payInfo.getOutTradeNo();
-		String status = "4";
-		String orderstatus = payInfo.getPayStatus();
 		//restTemplate.getForObject("http://order-service/nologin/edit/"+id +"?status=4"+"&orderstatus="+payInfo.getPayStatus(),Object.class);		
-		orderService.editOrderPayStatus(request, out_trade_no, status, orderstatus);
+		
+		boolean modifyOrderStatus = Boolean.valueOf(payPojo.getMustUseBackNotifyForOrderStatus());
+		boolean notifyInventory = Boolean.valueOf(payPojo.getMustUseBackNotifyForInventory());
+	    String status = status_4;
+		String orderstatus = payInfo.getPayStatus();
+	    orderService.editOrderPayStatus(payInfo.getOutTradeNo(),status,orderstatus, modifyOrderStatus, notifyInventory);
+	    
 	}
 	
 	
 	public SysConfigInfo getSysConfigInfo(String businessId,String payWay) {
-		SysConfigInfo info = restTemplate.getForObject("http://customer-service/uaa/nologin/getSysConfigInfo?Session_businessId="+businessId+"&BusinessPayWay="+payWay,SysConfigInfo.class,"");		
-		return info;
+//		ResponseEntity<Object> forEntity = restTemplate.getForEntity("http://customer-service/uaa/nologin/getSysConfigInfo?Session_businessId="+businessId+"&BusinessPayWay="+payWay,Object.class,Object.class);
+		try{
+			ResponseEntity<RepEntity> forEntity = restTemplate.getForEntity("http://customer-service/uaa/nologin/getSysConfigInfo?Session_businessId="+businessId+"&BusinessPayWay="+payWay,RepEntity.class);
+            List<SysConfigInfo> sysConfigInfo = forEntity.getBody().getSysConfigInfo();	
+            if(sysConfigInfo != null && sysConfigInfo.size() > 0){
+            	return sysConfigInfo.get(0);
+            }
+		}catch(Exception ex){
+			log.info("==========================1111111111111111111111===============");
+			
+		}
+
+		
+		
+//		RepEntity body = forEntity.getBody();
+//		if("0".equals(body.getStatus())){
+//			return (SysConfigInfo)body.getData();
+//		}
+		return null;
 	}
 	
 	public PayInfo getpayInfoByOutTradeNoAndChannelId(String out_trade_no, String channel_id) {

@@ -42,8 +42,7 @@ private static final Log log = LogFactory.getLog(PayUtil.class);
 		String mysign = MD5Util.MD5Encode(sb.toString(), characterEncoding).toLowerCase();
 		String tenpaySign = ((String)packageParams.get("sign")).toLowerCase();
 		
-		//return tenpaySign.equals(mysign);
-		return true;
+		return tenpaySign.equals(mysign);
 	}
     
 //    /**

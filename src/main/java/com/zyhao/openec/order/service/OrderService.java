@@ -373,14 +373,12 @@ public class OrderService {
 			Pageable pageable = new PageRequest(page, size,sort);
 			log.info("====content======status="+status+" businessId="+businessId+" userId="+userId);
 			
-			if(status.equals("all") || status.equals("ALL")){
+			if(status.equals(PaymentServiceV1.status_4) || status.equals(PaymentServiceV1.status_6)){
 				
-				List<String> statusNot = new ArrayList();
-				
-				statusNot.add("100");
-				statusNot.add("0");
-				
-				Page<Orders> orderList = orderRepository.findByMemberIdAndBusinessIdAndStatusNotIn(userId,businessId,statusNot,pageable);
+				List<String> statusIn = new ArrayList<String>();
+				statusIn.add(PaymentServiceV1.status_4);
+				statusIn.add(PaymentServiceV1.status_6);
+				Page<Orders> orderList = orderRepository.findByMemberIdAndBusinessIdAndStatusIn(userId,businessId,statusIn,pageable);
 				List<Orders> content = orderList.getContent();
 				log.info("====content======"+content);
 				for(Orders o :content){
@@ -395,15 +393,6 @@ public class OrderService {
 				return resp;
 			}
 			
-			if(status.equals("0") || status.equals("100")){
-				
-				resp.setMsg("订单列表查询失败，状态不允许");
-				resp.setStatus("-1");
-				
-				return resp;
-			}
-			
-
 			Page<Orders> orderList = orderRepository.findByMemberIdAndStatusAndBusinessId(userId,status,businessId,pageable);
 			List<Orders> content = orderList.getContent();
 			log.info("====content======"+content);
@@ -650,17 +639,21 @@ public class OrderService {
 	 * 修改订单支付状态
 	 * @param out_trade_no
 	 * @param status
+	 * @param orderstatus
+	 * @param mustModifyOrderStatus
+	 * @param mustNotifyInventory
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public Object editOrderPayStatus(HttpServletRequest request,String out_trade_no, String status,String orderstatus) throws Exception {
+	public Object editOrderPayStatus(String out_trade_no, String status,String orderstatus,boolean mustModifyOrderStatus,boolean mustNotifyInventory) throws Exception {
 		List<Inventory> reqAry = new ArrayList<Inventory>();
 		List<Orders> orders = orderRepository.findByOutTradeNo(out_trade_no);
 		for (Orders order : orders) {
-			//若支付失败，订单状态为待支付
-			order.setStatus(status);
-			order.setPayStatus(orderstatus);
-			
+			if(mustModifyOrderStatus){//若该订单状态，由支付的前台通知和后台通知来判断
+				//若支付失败，订单状态为待支付
+				order.setStatus(status);
+				order.setPayStatus(orderstatus);
+			}
 			log.info("editOrderPayStatus=======editOrderPayStatus is "+order);
 			if(order.getOrderCode() != null){
 				List<OrderItem> findByOrderCode = orderItemRepository.findByOrderCode(order.getOrderCode());
@@ -675,18 +668,22 @@ public class OrderService {
 			}
 		}
 		
-		HttpHeaders headers = new HttpHeaders();
-		MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
-		headers.setContentType(type);				
-		ObjectMapper map = new ObjectMapper();
-		String s = map.writeValueAsString(reqAry);
-		log.info("===================="+s);
-		HttpEntity<String> formEntity = new HttpEntity<String>(s, headers);
-		restTemplate.postForObject("http://inventory-service/v1/minusInventory",formEntity, Object.class);
+		if(mustModifyOrderStatus){//若该订单状态，由支付的前台通知和后台通知来判断
+			orderRepository.save(orders);
+		}
+		if(mustNotifyInventory){//如果不必须通知库存,由支付的前台通知和后台通知来判断
+			HttpHeaders headers = new HttpHeaders();
+			MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
+			headers.setContentType(type);				
+			ObjectMapper map = new ObjectMapper();
+			String s = map.writeValueAsString(reqAry);
+			log.info("===================="+s);
+			HttpEntity<String> formEntity = new HttpEntity<String>(s, headers);
+			restTemplate.postForObject("http://inventory-service/v1/minusInventory",formEntity, Object.class);
 		
-
+		}
 		
-		return orderRepository.save(orders);
+		return orders;
 	}
 
 	public RepEntity getRefundListByStatus(HttpServletRequest request,int page, int size, String type, String status) {
