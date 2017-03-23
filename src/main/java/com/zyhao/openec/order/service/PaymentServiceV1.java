@@ -3,6 +3,7 @@ package com.zyhao.openec.order.service;
 import java.io.BufferedOutputStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -36,6 +37,7 @@ import com.zyhao.openec.util.Constant;
 import com.zyhao.openec.util.DateUtil;
 import com.zyhao.openec.util.EpayCore;
 import com.zyhao.openec.util.HttpUtil;
+import com.zyhao.openec.util.O2MUtil;
 import com.zyhao.openec.util.PayUtil;
 import com.zyhao.openec.util.QrcbConstant;
 import com.zyhao.openec.util.Utils;
@@ -118,6 +120,7 @@ public class PaymentServiceV1 {
 		
 		log.info(" frontNotify method find payinfo ByOutTradeNo error, find payinfo authenticatedUserId="+authenticatedUserId+" pay.getOutTradeNo()="+pay.getOutTradeNo());
 		
+		
 //		if(authenticatedUserId != null && !"".equals(String.valueOf(authenticatedUserId))){
 			PayInfo findByOutTradeNo = payInfoDao.findByOutTradeNo(pay.getOutTradeNo());
 			if(findByOutTradeNo == null){
@@ -127,6 +130,33 @@ public class PaymentServiceV1 {
 				returnObj.setMsg("cannot find payinfo from db");
 				return returnObj;
 			}
+			
+			
+			
+			if(findByOutTradeNo.getPayWay().equals(Constant.PayWay.QrcbPay.name())){
+				Map<String,String> requestParams = O2MUtil.Split(findByOutTradeNo.getDetail());
+				requestParams.put("outTradeNo", null);
+				
+				String key = getSysConfigInfo(pay.getBusinessId(),findByOutTradeNo.getPayWay()).getAppkey();
+				String value = EpayCore.createLinkString(EpayCore.paraFilter(requestParams));
+				String sign = EpayMD5.sign(value,key,"UTF-8");
+				log.error(" frontNotify method find payinfo ByOutTradeNo error,验证数据加解密失败 key="+key+" requestParams="+requestParams);
+
+				if(!EpayMD5.validateSign(value, sign, key, "UTF-8"))//验证数据加解密
+				{
+					log.error(" frontNotify method find payinfo ByOutTradeNo error,验证数据加解密失败 requestParams="+requestParams);
+
+					ReturnObj returnObj = new ReturnObj();
+				    returnObj.setCode(Constant.error);
+				    returnObj.setMsg("验证数据加解密失败");
+					return returnObj;
+			    }
+				
+			}
+			
+			
+			
+			
 			
 		    findByOutTradeNo.setDetail(pay.getDetail());
 		    findByOutTradeNo.setTradeNo(pay.getTradeNo());
