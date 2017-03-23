@@ -3,7 +3,6 @@ package com.zyhao.openec.order.service;
 import java.io.BufferedOutputStream;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -31,11 +30,11 @@ import com.zyhao.openec.order.repository.PayInfoRepository;
 import com.zyhao.openec.pojo.RepEntity;
 import com.zyhao.openec.pojo.ReturnObj;
 import com.zyhao.openec.pojo.SysConfigInfo;
-import com.zyhao.openec.sign.EpayMD5;
 import com.zyhao.openec.util.CommonUtil;
 import com.zyhao.openec.util.Constant;
 import com.zyhao.openec.util.DateUtil;
 import com.zyhao.openec.util.EpayCore;
+import com.zyhao.openec.util.EpayMD5;
 import com.zyhao.openec.util.HttpUtil;
 import com.zyhao.openec.util.O2MUtil;
 import com.zyhao.openec.util.PayUtil;
@@ -134,10 +133,10 @@ public class PaymentServiceV1 {
 			
 			
 			if(findByOutTradeNo.getPayWay().equals(Constant.PayWay.QrcbPay.name())){
-				Map<String,String> requestParams = O2MUtil.Split(pay.getDetail());
+				Map<String,String> requestParams = O2MUtil.Split(pay.getDetail().replace("?", "&"));
 				requestParams.put("outTradeNo", null);
 				
-				String key = getSysConfigInfo(pay.getBusinessId(),findByOutTradeNo.getPayWay()).getAppkey();
+				String key = getSysConfigInfo(findByOutTradeNo.getBusinessId(),findByOutTradeNo.getPayWay()).getAppkey();
 				String value = EpayCore.createLinkString(EpayCore.paraFilter(requestParams));
 				String sign = EpayMD5.sign(value,key,"UTF-8");
 				log.error(" frontNotify method find payinfo ByOutTradeNo error,验证数据加解密失败 key="+key+" requestParams="+requestParams);
