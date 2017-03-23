@@ -134,7 +134,7 @@ public class PaymentServiceV1 {
 			
 			
 			if(findByOutTradeNo.getPayWay().equals(Constant.PayWay.QrcbPay.name())){
-				Map<String,String> requestParams = O2MUtil.Split(findByOutTradeNo.getDetail());
+				Map<String,String> requestParams = O2MUtil.Split(pay.getDetail());
 				requestParams.put("outTradeNo", null);
 				
 				String key = getSysConfigInfo(pay.getBusinessId(),findByOutTradeNo.getPayWay()).getAppkey();
