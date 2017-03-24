@@ -159,32 +159,86 @@ public class AliPayUtil {
 		if(map.containsKey("retcode")){
 		    pay.setReturnCode(String.valueOf(map.get("retcode")));
 		}
-		
-		
-		if(map.containsKey("pay_info")){
-		    pay.setReturnMsg(String.valueOf(map.get("pay_info")));
+		if(map.containsKey("return_msg")){
+		    pay.setReturnMsg(String.valueOf(map.get("return_msg")));
 		}
-		
-		if(map.containsKey("trade_state")){
-			pay.setTradeStatus(String.valueOf(map.get("trade_state")));
+		if(map.containsKey("transport_fee") && String.valueOf(map.get("transport_fee")) != null){
+		    pay.setTotalFare(Integer.valueOf(CommonUtil.changeY2F(String.valueOf(map.get("transport_fee")))));
 		}
-		
-		if(map.containsKey("transaction_id")){
-			pay.setTradeNo(String.valueOf(map.get("transaction_id")));
-		}
-		
 		if(map.containsKey("partner")){
 		    pay.setSellerNum(String.valueOf(map.get("partner")));
 		}
-		if(map.containsKey("trade_mode")){
-		    pay.setTradeType(String.valueOf(map.get("trade_mode")));
+		if(map.containsKey("input_charset")){
+			pay.setCharset((String.valueOf(map.get("input_charset"))));
 		}
-		if(map.containsKey("fee_type")){
-			json.put("fee_type",String.valueOf(map.get("fee_type")));
+		if(map.containsKey("sign_type")){
+			pay.setSignType((String.valueOf(map.get("sign_type"))));
+		}
+		if(map.containsKey("sign")){
+			pay.setSign((String.valueOf(map.get("sign"))));
+		}
+		if(map.containsKey("trade_mode")){
+			pay.setTradeType((String.valueOf(map.get("trade_mode"))));
+		}
+		if(map.containsKey("trade_state")){
+			pay.setTradeStatus((String.valueOf(map.get("trade_state"))));
+		}
+		if(map.containsKey("pay_info")){
+			pay.setErrCodeDes((String.valueOf(map.get("pay_info"))));
+		}
+		if(map.containsKey("trans_channel")){
+			pay.setTransChannel((String.valueOf(map.get("trans_channel"))));
+		}
+		
+		if(map.containsKey("device_info")){
+		    pay.setDeviceInfo(String.valueOf(map.get("device_info")));
+		}
+		if(map.containsKey("nonce_str")){
+			json.put("nonce_str",String.valueOf(map.get("nonce_str")));
+		}
+		
+		if(map.containsKey("result_code")){
+		    pay.setResultCode(String.valueOf(map.get("result_code")));
+		}
+		if(map.containsKey("err_code")){
+		    pay.setErrCode(String.valueOf(map.get("err_code")));
+		}
+		if(map.containsKey("err_code_des")){
+		    pay.setErrCodeDes(String.valueOf(map.get("err_code_des")));
+		}
+		
+		if(map.containsKey("trade_type")){
+		    pay.setTradeType(String.valueOf(map.get("trade_type")));
 		}
 		if(map.containsKey("bank_type")){
 		    pay.setBankNo(String.valueOf(map.get("bank_type")));
 		}
+		if(map.containsKey("bank_transno")){
+		    pay.setBankTransNo(String.valueOf(map.get("bank_transno")));
+		}
+	
+		if(map.containsKey("settlement_total_fee")){
+			json.put("settlement_total_fee",String.valueOf(map.get("settlement_total_fee")));
+		}
+		if(map.containsKey("fee_type")){
+			json.put("fee_type",String.valueOf(map.get("fee_type")));
+		}
+		if(map.containsKey("cash_fee")){
+			json.put("cash_fee",String.valueOf(map.get("cash_fee")));
+		}
+		if(map.containsKey("cash_fee_type")){
+			json.put("cash_fee_type",String.valueOf(map.get("cash_fee_type")));
+		}
+		if(map.containsKey("coupon_fee")){
+			json.put("coupon_fee",String.valueOf(map.get("coupon_fee")));
+		}
+		if(map.containsKey("coupon_count")){
+			json.put("coupon_count",String.valueOf(map.get("coupon_count")));
+		}
+		if(map.containsKey("transaction_id")){
+		    pay.setTradeNo(String.valueOf(map.get("transaction_id")));
+		}
+	
 		
 		if(map.containsKey("total_fee")){
 			json.put("total_fee",String.valueOf(map.get("total_fee")));
@@ -196,7 +250,6 @@ public class AliPayUtil {
 		if(map.containsKey("transport_fee")){
 			json.put("transport_fee",String.valueOf(map.get("transport_fee")));
 		}
-		
 		
 		if(map.containsKey("discount")){
 			json.put("discount",String.valueOf(map.get("discount")));
