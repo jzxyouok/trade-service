@@ -89,7 +89,7 @@ public class PaymentServiceV1 {
 		    //生成数据验签
 		    String contentMd5 = PayUtil.contentMd5(pay);
 		    pay.setContentMd5(contentMd5);
-		    
+		    pay.setCommitTime(new Date().getTime());
 		    savePayInfo(pay);
 		    returnObj.setCode(Constant.success);
 		    returnObj.setMsg(" save pay info success");
@@ -375,8 +375,7 @@ public class PaymentServiceV1 {
 					String err_code_des = (String) map.get("err_code_des");
 					ReturnObj returnObj = new ReturnObj();
 					returnObj.setCode(Constant.error);
-					returnObj.setMsg(err_code_des);
-					returnObj.setMsg(out_trade_no);
+					returnObj.setMsg("该支付信息已经被处理，请重新缴费操作:"+err_code_des);
 					return returnObj;
 				}
 			}else{
@@ -507,12 +506,8 @@ public class PaymentServiceV1 {
 	 * @param payInfo
 	 * @throws Exception 
 	 */
-	public void notifyOrder(PayInfo payInfo) throws Exception {
+	public void notifyOrder(PayInfo payInfo,String status,boolean modifyOrderStatus,boolean notifyInventory) throws Exception {
 		//restTemplate.getForObject("http://order-service/nologin/edit/"+id +"?status=4"+"&orderstatus="+payInfo.getPayStatus(),Object.class);		
-		
-		boolean modifyOrderStatus = Boolean.valueOf(payPojo.getMustUseBackNotifyForOrderStatus());
-		boolean notifyInventory = Boolean.valueOf(payPojo.getMustUseBackNotifyForInventory());
-	    String status = status_4;
 		String orderstatus = payInfo.getPayStatus();
 	    orderService.editOrderPayStatus(payInfo.getOutTradeNo(),status,orderstatus, modifyOrderStatus, notifyInventory);
 	    

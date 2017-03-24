@@ -4,6 +4,7 @@ package com.zyhao.openec.order.controller;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.zyhao.openec.order.entity.PayInfo;
 import com.zyhao.openec.order.pojo.PayPoJo;
+import com.zyhao.openec.order.repository.PayInfoRepository;
 import com.zyhao.openec.order.service.PaymentServiceV1;
 import com.zyhao.openec.pojo.ReturnObj;
 import com.zyhao.openec.util.AliPayUtil;
@@ -35,6 +37,7 @@ import com.zyhao.openec.util.Constant;
 import com.zyhao.openec.util.DateUtil;
 import com.zyhao.openec.util.EpayCore;
 import com.zyhao.openec.util.EpayMD5;
+import com.zyhao.openec.util.O2MUtil;
 import com.zyhao.openec.util.PayUtil;
 import com.zyhao.openec.util.WechatPayUtil;
 import com.zyhao.openec.util.XMLUtil;
@@ -45,7 +48,10 @@ public class PaymentNoLoginController {
 	private final Log log = LogFactory.getLog(PaymentNoLoginController.class);
 	@Autowired
 	private PaymentServiceV1 paymentService;
-	
+	@Autowired
+	private PayPoJo payPojo;
+	@Autowired
+	private PayInfoRepository payInfoDao;
 	@Autowired
     public PaymentNoLoginController(PaymentServiceV1 paymentService) {
         this.paymentService = paymentService;
@@ -60,7 +66,7 @@ public class PaymentNoLoginController {
 	@RequestMapping(path = "/frontNotify", method = RequestMethod.POST)
     public ResponseEntity frontNotify(
     		@Validated @RequestBody PayInfo pay,
-    		HttpServletRequest request) throws Exception {
+    		HttpServletRequest request,HttpServletResponse response) throws Exception {
 		
 		if(pay == null){
 			//返回失败信息
@@ -75,10 +81,98 @@ public class PaymentNoLoginController {
 		}
 		log.info("frontNotify method params is "+pay.toString());
 		try{
-			ReturnObj returnObj = paymentService.frontNotify(request,pay);
-			return Optional.ofNullable(returnObj)
-	               .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
-	               .get();
+//			ReturnObj returnObj = paymentService.frontNotify(request,pay);
+
+			
+			PayInfo findByOutTradeNo = paymentService.getpayInfoByOutTradeNo(pay.getOutTradeNo());
+			if(findByOutTradeNo == null){
+				log.error(" frontNotify method find payinfo ByOutTradeNo error,cannot find payinfo ");
+				ReturnObj returnObj = new ReturnObj();
+				returnObj.setCode(Constant.error);
+				returnObj.setMsg("cannot find payinfo from db");
+				return Optional.ofNullable(returnObj)
+		                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+		                .get();
+			}
+			if(findByOutTradeNo.getFrontNotifyStatus() != null && "1".equals(findByOutTradeNo.getFrontNotifyStatus())){
+				log.error(" frontNotify method already run ");
+				ReturnObj returnObj = new ReturnObj();
+				returnObj.setCode(Constant.error);
+				returnObj.setMsg("frontNotify method already run");
+				return Optional.ofNullable(returnObj)
+		                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+		                .get();
+			}
+			
+			
+			if(findByOutTradeNo.getPayWay().equals(Constant.PayWay.QrcbPay.name())){
+				Map<String,String> requestParams = O2MUtil.Split(pay.getDetail().replace("?", "&"));
+				requestParams.put("outTradeNo", null);
+				for (String key : requestParams.keySet()) {
+		            String value = requestParams.get(key);
+		            if(value != null && !"".equals(value)){
+		                requestParams.put(key, URLDecoder.decode(value,"utf-8"));
+		            }
+		        }
+				String key = paymentService.getSysConfigInfo(findByOutTradeNo.getBusinessId(),findByOutTradeNo.getPayWay()).getAppkey();
+				String value = EpayCore.createLinkString(EpayCore.paraFilter(requestParams));
+				String sign = EpayMD5.sign(value,key,"UTF-8");
+				log.error(" frontNotify method find payinfo ByOutTradeNo error,验证数据加解密失败 key="+key+" requestParams="+requestParams);
+				if(!"0".equals(String.valueOf(requestParams.get("trade_state"))))//验证支付状态
+				{
+					log.error(" frontNotify method find payinfo ByOutTradeNo error,支付失败 requestParams="+requestParams);
+
+					ReturnObj returnObj = new ReturnObj();
+				    returnObj.setCode(Constant.error);
+				    returnObj.setMsg("支付失败");
+				    return Optional.ofNullable(requestParams.get("pay_info"))
+			                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+			                .get();
+			    }
+				if(!EpayMD5.validateSign(value, sign, key, "UTF-8"))//验证数据加解密
+				{
+					log.error(" frontNotify method find payinfo ByOutTradeNo error,验证数据加解密失败 requestParams="+requestParams);
+
+					ReturnObj returnObj = new ReturnObj();
+				    returnObj.setCode(Constant.error);
+				    returnObj.setMsg("验证数据加解密失败");
+				    return Optional.ofNullable(returnObj)
+			                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+			                .get();
+			    }
+				
+				
+			}
+			
+			
+		    findByOutTradeNo.setDetail(pay.getDetail());
+		    findByOutTradeNo.setTradeNo(pay.getTradeNo());
+		    findByOutTradeNo.setFrontNotifyStatus(pay.getFrontNotifyStatus());
+		    payInfoDao.saveAndFlush(findByOutTradeNo);
+		    
+		    boolean modifyOrderStatus = Boolean.valueOf(payPojo.getMustUseFrontNotifyForOrderStatus());
+		    boolean notifyInventory = Boolean.valueOf(payPojo.getMustUseFrontNotifyForInventory());
+		    String status = PaymentServiceV1.status_6;
+		    
+		    //TODO 4.调用订单接口
+			try{
+			    paymentService.notifyOrder(pay,status,modifyOrderStatus,notifyInventory);
+			}catch(Exception ex){
+				ex.printStackTrace();
+				log.error("frontNotify method 通知订单失败!payInfo="+pay.toString());
+			}
+		    // 5.返回	 
+			//----END---------
+			String backRcvResp = paymentService.backRcvResp(pay,response);
+			log.info(" frontNotify method run [end] requestParamsJson="+pay +" returnStr="+backRcvResp);
+			ReturnObj returnObj = new ReturnObj();
+			returnObj.setCode(Constant.success);
+		    returnObj.setMsg("error");
+		    returnObj.setData(backRcvResp);
+	        return Optional.ofNullable(backRcvResp)
+	                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+	                .get();
+			
 		}catch(Exception ex){
 			//------异常处理--------
 			ex.printStackTrace();
@@ -106,7 +200,6 @@ public class PaymentNoLoginController {
     		@PathVariable("attch") String attch,
     		HttpServletRequest request,HttpServletResponse response) throws Exception {
 		log.info(" backRcvResp method is called! [start]"+DateUtil.getDefaultDate());
-		
 		//1.获取请求参数,输出JSON日志 
 		//------BEGINE-----------
 		JSONObject requestParamsJson = new JSONObject();
@@ -118,7 +211,6 @@ public class PaymentNoLoginController {
 		requestParamsJson.put("pay_way",pay_way);
 		requestParamsJson.put("attch",attch);
 		log.info(DateUtil.getDefaultDate()+" backRcvResp method is called! all params are "+requestParamsJson);
-		
 		//2.根据支付方式进行参数解析,转成PayInfo Bean：微信支付通知参数是xml报文，支付宝是get请求的参数
 		PayInfo payInfo = null;
 		String returnStr = null;
@@ -156,7 +248,22 @@ public class PaymentNoLoginController {
 					{
 						log.info(" backRcvResp method 比较验签成功:WechatPayUtil.getKey is "+key+" channel_id is"+channel_id);
 
+						
+						
                         payInfo = WechatPayUtil.convertMapToBean(requestParams,pay);
+                        
+                        if(!requestParams.containsKey("result_code") || !"SUCCESS".equalsIgnoreCase(String.valueOf(requestParams.get("result_code")))){
+                        	returnStr = paymentService.backRcvResp(payInfo,response);
+        					log.info(" backRcvResp method run [end] requestParamsJson="+requestParamsJson +" returnStr="+returnStr);
+        					payInfoDao.saveAndFlush(payInfo);
+        			        return Optional.ofNullable(returnStr)
+        			                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+        			                .get();
+                        }
+                        
+                        
+                        
+                        
                         
 					}else{
 						requestParamsJson.put("code", "error");
@@ -211,7 +318,9 @@ public class PaymentNoLoginController {
 		    	Iterator keys = json.keys();
 		    	while(keys.hasNext()){
 		    		String k = String.valueOf(keys.next());
-		    		requestParams.put(k,json.getString(k));
+		    		if(json.getString(k) != null && !"".equals(json.getString(k))){
+		    		    requestParams.put(k,URLDecoder.decode(json.getString(k),"utf-8"));
+		    		}
 		    	}
 		    	pay = paymentService.getpayInfoByOutTradeNo(String.valueOf(json.get("out_trade_no")));
 		    	log.info("backRcvResp method run  pay_way="+pay_way+" out_trade_no===="+json.get("out_trade_no")+" pay -========="+pay);
@@ -230,6 +339,23 @@ public class PaymentNoLoginController {
 			    }else{
 					//----------处理支付宝支付通知业务--------------
 					log.debug(" backRcvResp method QrcbPayUtil.getKey is "+key+" channel_id is"+channel_id);
+					
+					if(!"0".equals(String.valueOf(requestParams.get("trade_state"))))//验证支付状态
+					{
+						log.error(" backRcvResp method find payinfo ByOutTradeNo error,支付失败 requestParams="+requestParams);
+
+						
+						payInfo = AliPayUtil.convertMapToBeanQrcb(requestParams,pay);
+						paymentService.updatePayInfo(payInfo);
+						
+						returnStr = paymentService.backRcvResp(payInfo,response);
+						log.info(" backRcvResp method run [end] requestParamsJson="+requestParamsJson +" returnStr="+returnStr);
+				        return Optional.ofNullable(returnStr)
+				                .map(varname -> new ResponseEntity<>(varname, HttpStatus.OK))
+				                .get();
+				    }
+					
+					
 					String value = EpayCore.createLinkString(EpayCore.paraFilter(requestParams));
 					String sign = EpayMD5.sign(value,key,"UTF-8");
 					
@@ -290,7 +416,10 @@ public class PaymentNoLoginController {
 		}
 		//TODO 4.调用订单接口
 		try{
-		    paymentService.notifyOrder(payInfo);
+
+			boolean modifyOrderStatus = Boolean.valueOf(payPojo.getMustUseBackNotifyForOrderStatus());
+			boolean notifyInventory = Boolean.valueOf(payPojo.getMustUseBackNotifyForInventory());
+		    paymentService.notifyOrder(payInfo,PaymentServiceV1.status_4,modifyOrderStatus,notifyInventory);
 		}catch(Exception ex){
 			ex.printStackTrace();
 			log.error("backRcvResp method 通知订单失败!payInfo="+payInfo.toString());
