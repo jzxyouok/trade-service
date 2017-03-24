@@ -651,7 +651,13 @@ public class OrderService {
 		for (Orders order : orders) {
 			if(mustModifyOrderStatus){//若该订单状态，由支付的前台通知和后台通知来判断
 				//若支付失败，订单状态为待支付
-				order.setStatus(status);
+				if(!PaymentServiceV1.status_0.equals(order.getStatus())
+						&& status.equals(PaymentServiceV1.status_6) ){
+					//待确认不必须是待支付
+				}else{
+					order.setStatus(status);
+				}
+				
 				order.setPayStatus(orderstatus);
 			}
 			log.info("editOrderPayStatus=======editOrderPayStatus is "+order);
@@ -758,8 +764,13 @@ public class OrderService {
 		try{
             Sort sort = new Sort(Sort.Direction.DESC, "createAt");
 			Pageable pageable = new PageRequest(page, size,sort );
-			
-			Page<Orders> orderList = orderRepository.findBySellerIdAndStatusAndBusinessId(sellerId,status,businessId,pageable);
+			List<String> statusIn = new ArrayList<String>();
+			statusIn.add(status);
+            if(status.equals(PaymentServiceV1.status_4) || status.equals(PaymentServiceV1.status_6)){
+				statusIn.add(PaymentServiceV1.status_4);
+				statusIn.add(PaymentServiceV1.status_6);
+            }
+			Page<Orders> orderList = orderRepository.findBySellerIdAndStatusInAndBusinessId(sellerId,statusIn,businessId,pageable);
 			if(orderList.getContent() != null && orderList.getContent().size() > 0){
 				List<Orders> content = orderList.getContent();
 				for(Orders o:content){

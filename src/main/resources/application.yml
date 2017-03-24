@@ -11,7 +11,7 @@ QrcbConstant:
 #  partner: 12052737
 #  key: fd27ea9125c84c1886d0a4a7a94c211d
   show_url: https://sqyx.qrcb.com.cn/
-  url: https://epay.qrcb.com.cn:50080/epaygate/mb/Wirelesspaygate.htm
+  url: /epaygate/mb/Wirelesspaygate.htm
 #  return_url: https://sqyx.qrcb.com.cn/html/shoppingcart/payresult.html?outTradeNo=
 #  notify_url: https://sqyx.qrcb.com.cn/api/trade/nologin/backRcvResp/
 ---

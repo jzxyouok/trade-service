@@ -166,7 +166,6 @@ public class PaymentServiceV1 {
 		    boolean notifyInventory = Boolean.valueOf(payPojo.getMustUseFrontNotifyForInventory());
 		    String status = status_6;
 			String orderstatus = pay.getPayStatus();
-			
 		    orderService.editOrderPayStatus(pay.getOutTradeNo(),status,orderstatus, modifyOrderStatus, notifyInventory);
 		    
 		    ReturnObj returnObj = new ReturnObj();
@@ -432,7 +431,7 @@ public class PaymentServiceV1 {
 	  //  String notify_url = qrcbConstant.getNotify_url()+channel_id+"/"+pay_way+"/"+pay.getContentMd5();//"https://sqyx.qrcb.com.cn/api/payment/nologin/backRcvResp/"+channel_id+"/"+pay_way+"/"+pay.getContentMd5();
 		Integer price = pay.getPayPrice();
 		double total_price = CommonUtil.doubleDivide(price, 100,2);
-		String url = sysConfigInfo.getUfdoderUrl();//"https://epay.qrcb.com.cn:50080/epaygate/mb/Wirelesspaygate.htm";
+		String url = sysConfigInfo.getUfdoderUrl()+qrcbConstant.getUrl();//"https://epay.qrcb.com.cn:50080/epaygate/mb/Wirelesspaygate.htm";
 		String show_url = qrcbConstant.getShow_url();//"https://sqyx.qrcb.com.cn";
 		
 		String ip = "127.0.0.1";
