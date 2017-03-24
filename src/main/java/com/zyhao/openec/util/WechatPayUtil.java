@@ -102,7 +102,7 @@ public class WechatPayUtil {
             Date date = sdf.parse(String.valueOf(map.get("time_end"))); 
 		    pay.setGmtPayment(date.getTime());//20140903131540
 		}
-		
+		pay.setExt(json.toString());
 		return pay;
 	}
 //    

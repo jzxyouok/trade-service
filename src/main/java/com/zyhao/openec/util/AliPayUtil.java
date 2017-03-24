@@ -34,25 +34,56 @@ public class AliPayUtil {
 		if(map.containsKey("return_code")){
 		    pay.setReturnCode(String.valueOf(map.get("return_code")));
 		}
+		if(map.containsKey("retcode")){
+		    pay.setReturnCode(String.valueOf(map.get("retcode")));
+		}
 		if(map.containsKey("return_msg")){
 		    pay.setReturnMsg(String.valueOf(map.get("return_msg")));
 		}
-		
+		if(map.containsKey("transport_fee") && String.valueOf(map.get("transport_fee")) != null){
+		    pay.setTotalFare(Integer.valueOf(CommonUtil.changeY2F(String.valueOf(map.get("transport_fee")))));
+		}
 		if(map.containsKey("appid")){
 			pay.setSellerId(String.valueOf(map.get("appid")));
 		}
 		if(map.containsKey("mch_id")){
 		    pay.setSellerNum(String.valueOf(map.get("mch_id")));
 		}
+		if(map.containsKey("partner")){
+		    pay.setSellerNum(String.valueOf(map.get("partner")));
+		}
+		if(map.containsKey("openid")){
+			pay.setBuyerId(String.valueOf(map.get("openid")));
+		}
+		if(map.containsKey("input_charset")){
+			pay.setCharset((String.valueOf(map.get("input_charset"))));
+		}
+		if(map.containsKey("sign_type")){
+			pay.setSignType((String.valueOf(map.get("sign_type"))));
+		}
+		if(map.containsKey("sign")){
+			pay.setSign((String.valueOf(map.get("sign"))));
+		}
+		if(map.containsKey("trade_mode")){
+			pay.setTradeType((String.valueOf(map.get("trade_mode"))));
+		}
+		if(map.containsKey("trade_state")){
+			pay.setTradeStatus((String.valueOf(map.get("trade_state"))));
+		}
+		if(map.containsKey("pay_info")){
+			pay.setErrCodeDes((String.valueOf(map.get("pay_info"))));
+		}
+		if(map.containsKey("trans_channel")){
+			pay.setTransChannel((String.valueOf(map.get("trans_channel"))));
+		}
+		
 		if(map.containsKey("device_info")){
 		    pay.setDeviceInfo(String.valueOf(map.get("device_info")));
 		}
 		if(map.containsKey("nonce_str")){
 			json.put("nonce_str",String.valueOf(map.get("nonce_str")));
 		}
-		if(map.containsKey("sign")){
-		    pay.setSign(String.valueOf(map.get("sign")));
-		}
+		
 		if(map.containsKey("result_code")){
 		    pay.setResultCode(String.valueOf(map.get("result_code")));
 		}
@@ -62,9 +93,7 @@ public class AliPayUtil {
 		if(map.containsKey("err_code_des")){
 		    pay.setErrCodeDes(String.valueOf(map.get("err_code_des")));
 		}
-		if(map.containsKey("openid")){
-			pay.setBuyerId(String.valueOf(map.get("openid")));
-		}
+		
 		if(map.containsKey("is_subscribe")){
 			json.put("is_subscribe",String.valueOf(map.get("is_subscribe")));
 		}
@@ -73,6 +102,9 @@ public class AliPayUtil {
 		}
 		if(map.containsKey("bank_type")){
 		    pay.setBankNo(String.valueOf(map.get("bank_type")));
+		}
+		if(map.containsKey("bank_transno")){
+		    pay.setBankTransNo(String.valueOf(map.get("bank_transno")));
 		}
 		if(map.containsKey("total_fee")){
 			json.put("total_fee",String.valueOf(map.get("total_fee")));
@@ -106,6 +138,7 @@ public class AliPayUtil {
             Date date = sdf.parse(String.valueOf(map.get("time_end"))); 
 		    pay.setGmtPayment(date.getTime());//20140903131540
 		}
+		pay.setExt(json.toString());
 		return pay;
 	}
     /**

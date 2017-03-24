@@ -143,6 +143,10 @@ public class PayInfo implements Serializable {
 
 	
 	private String businessId;
+	private String billCheck;
+	private String remark;
+	private String transChannel;
+	private String bankTransNo;
 	/**
 	 * Constructor.
 	 */
@@ -955,6 +959,40 @@ public class PayInfo implements Serializable {
 		this.businessId = businessId;
 	}
 
+	
+	public String getBillCheck() {
+		return billCheck;
+	}
+
+	public void setBillCheck(String billCheck) {
+		this.billCheck = billCheck;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	
+	public String getTransChannel() {
+		return transChannel;
+	}
+
+	public void setTransChannel(String transChannel) {
+		this.transChannel = transChannel;
+	}
+
+	public String getBankTransNo() {
+		return bankTransNo;
+	}
+
+	public void setBankTransNo(String bankTransNo) {
+		this.bankTransNo = bankTransNo;
+	}
+
 	@Override
 	public String toString() {
 		return "PayInfo [outTradeNo=" + outTradeNo + ", totalPrice=" + totalPrice + ", totalFare=" + totalFare
@@ -968,8 +1006,12 @@ public class PayInfo implements Serializable {
 				+ signType + ", sign=" + sign + ", attch=" + attch + ", tradeType=" + tradeType + ", tradeStatus="
 				+ tradeStatus + ", prepayId=" + prepayId + ", notifyTime=" + notifyTime + ", notifyType=" + notifyType
 				+ ", notifyId=" + notifyId + ", tradeNo=" + tradeNo + ", gmtCreate=" + gmtCreate + ", gmtPayment="
-				+ gmtPayment + ", gmtClose=" + gmtClose + ", ext=" + ext + ", businessId=" + businessId + "]";
+				+ gmtPayment + ", gmtClose=" + gmtClose + ", ext=" + ext + ", businessId=" + businessId + ", billCheck="
+				+ billCheck + ", remark=" + remark + ", transChannel=" + transChannel + ", bankTransNo=" + bankTransNo
+				+ "]";
 	}
+
+	
 
 	
 }
