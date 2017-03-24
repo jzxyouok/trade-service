@@ -145,8 +145,8 @@ public class PayInfo implements Serializable {
 	private String businessId;
 	private String billCheck;
 	private String remark;
-	private String transChannel;
-	private String bankTransNo;
+	private String transChannel;//银行渠道pc 或手机
+	private String bankTransNo;//银行第三方流水号
 	/**
 	 * Constructor.
 	 */
